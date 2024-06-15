@@ -40,10 +40,12 @@ public class ImportSubCmd extends IRPCommand {
             }
 
             // Execute import
-            Bukkit.getScheduler().runTaskAsynchronously(main, BackupConversionUtil::convertOldBackupData);
+            Bukkit.getAsyncScheduler().runNow(main, t -> BackupConversionUtil.convertOldBackupData());
 
             // Reset suggestion to not visible
-            suggestConfirm.set(false);
+            this.main.getServer().getAsyncScheduler().runDelayed(this.main, r -> {
+                suggestConfirm.set(false);
+            }, 10 * 20 * 50, java.util.concurrent.TimeUnit.MILLISECONDS);
 
             sender.sendMessage(MessageData.getPluginPrefix() + MessageData.getImportSuccess());
         } else {

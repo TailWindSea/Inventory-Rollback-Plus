@@ -86,7 +86,7 @@ public class MainMenu {
         //How many pages are required
         pagesRequired = (int) Math.ceil(playersOnline / (double) spaceRequired);
 
-        //Check if pageNumber supplied is greater then pagesRequired, if true set to last page
+        //Check if pageNumber supplied is greater than pagesRequired, if true set to last page
         if (pageNumber > pagesRequired) {
             pageNumber = pagesRequired;
         } else if (pageNumber <= 0) {
