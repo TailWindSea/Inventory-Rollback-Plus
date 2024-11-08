@@ -301,8 +301,6 @@ public class ClickGUI implements Listener {
                             } catch (ExecutionException | InterruptedException ex) {
                                 ex.printStackTrace();
                             }
-<<<<<<< HEAD
-=======
 
                             ItemStack[] inventory = data.getMainInventory();
                             ItemStack[] armour = data.getArmour();
@@ -335,7 +333,6 @@ public class ClickGUI implements Listener {
                             player.sendMessage(MessageData.getPluginPrefix() + MessageData.getMainInventoryRestoredPlayer(staff.getName()));
                             if (!staff.getUniqueId().equals(player.getUniqueId()))
                                 staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getMainInventoryRestored(offlinePlayer.getName()));
->>>>>>> 61060c6b7383b426b6d02ab6aad49b8db6de63b3
                         }
 
                         ItemStack[] inventory = data.getMainInventory();
@@ -348,7 +345,7 @@ public class ClickGUI implements Listener {
                         catch (ExecutionException | InterruptedException ex) { ex.printStackTrace(); }
 
                         // If 1.8, place armor contents separately
-                        if (main.getVersion().isNoHigherThan(EnumNmsVersion.v1_8_R3)) {
+                        if (main.getVersion().lessOrEqThan(BukkitVersion.v1_8_R3)) {
                             // Place items sync (compressed code)
                             FutureTask<Void> futureSetArmor = new FutureTask<>(() -> {
                                 player.getInventory().setArmorContents(armour); return null;
