@@ -1,7 +1,7 @@
 package me.danjono.inventoryrollback.listeners;
 
 import com.nuclyon.technicallycoded.inventoryrollback.InventoryRollbackPlus;
-import com.nuclyon.technicallycoded.inventoryrollback.nms.EnumNmsVersion;
+import com.tcoded.lightlibs.bukkitversion.BukkitVersion;
 import io.papermc.lib.PaperLib;
 import me.danjono.inventoryrollback.InventoryRollback;
 import me.danjono.inventoryrollback.config.ConfigData;
@@ -56,7 +56,7 @@ public class ClickGUI implements Listener {
         e.setCancelled(true);
 
         //Check if inventory is a virtual one and not one that has the same name on a player chest
-        if (this.main.getVersion().isAtLeast(EnumNmsVersion.v1_9_R1) && isLocationAvailable(e.getInventory().getLocation())) {
+        if (this.main.getVersion().greaterOrEqThan(BukkitVersion.v1_9_R1) && isLocationAvailable(e.getInventory().getLocation())) {
             e.setCancelled(false);
             return;
         }
@@ -83,7 +83,7 @@ public class ClickGUI implements Listener {
             return;
 
         //Check if inventory is a virtual one and not one that has the same name on a player chest
-        if (this.main.getVersion().isAtLeast(EnumNmsVersion.v1_9_R1) && isLocationAvailable(e.getInventory().getLocation())) {
+        if (this.main.getVersion().greaterOrEqThan(BukkitVersion.v1_9_R1) && isLocationAvailable(e.getInventory().getLocation())) {
             return;
         }
 
@@ -301,6 +301,41 @@ public class ClickGUI implements Listener {
                             } catch (ExecutionException | InterruptedException ex) {
                                 ex.printStackTrace();
                             }
+<<<<<<< HEAD
+=======
+
+                            ItemStack[] inventory = data.getMainInventory();
+                            ItemStack[] armour = data.getArmour();
+
+                            // Place inventory items sync (compressed code)
+                            Future<Void> futureSetInv = main.getServer().getScheduler().callSyncMethod(main,
+                                    () -> { player.getInventory().setContents(inventory); return null; });
+                            try { futureSetInv.get(); }
+                            catch (ExecutionException | InterruptedException ex) { ex.printStackTrace(); }
+
+                            // If 1.8, place armor contents separately
+                            if (main.getVersion().lessOrEqThan(BukkitVersion.v1_8_R3)) {
+                                // Place items sync (compressed code)
+                                Future<Void> futureSetArmor = main.getServer().getScheduler().callSyncMethod(main,
+                                        () -> { player.getInventory().setArmorContents(armour); return null; });
+                                try { futureSetArmor.get(); }
+                                catch (ExecutionException | InterruptedException ex) { ex.printStackTrace(); }
+                            }
+
+                            // Play sound effect is enabled
+                            if (SoundData.isInventoryRestoreEnabled()) {
+                                // Play sound sync (compressed code)
+                                Future<Void> futurePlaySound = main.getServer().getScheduler().callSyncMethod(main,
+                                        () -> { player.playSound(player.getLocation(), SoundData.getInventoryRestored(), 1, 1); return null; });
+                                try { futurePlaySound.get(); }
+                                catch (ExecutionException | InterruptedException ex) { ex.printStackTrace(); }
+                            }
+
+                            // Send player & staff feedback
+                            player.sendMessage(MessageData.getPluginPrefix() + MessageData.getMainInventoryRestoredPlayer(staff.getName()));
+                            if (!staff.getUniqueId().equals(player.getUniqueId()))
+                                staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getMainInventoryRestored(offlinePlayer.getName()));
+>>>>>>> 61060c6b7383b426b6d02ab6aad49b8db6de63b3
                         }
 
                         ItemStack[] inventory = data.getMainInventory();
