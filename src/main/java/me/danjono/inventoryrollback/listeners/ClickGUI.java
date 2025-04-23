@@ -560,7 +560,7 @@ public class ClickGUI implements Listener {
             return;
 
         if (e.getRawSlot() >= (InventoryName.ENDER_CHEST_BACKUP.getSize() - 9) && e.getRawSlot() < InventoryName.ENDER_CHEST_BACKUP.getSize()) {
-            NBTWrapper nbt = new NBTWrapper(icon);
+            CustomDataItemEditor nbt = CustomDataItemEditor.editItem(icon);
             if (!nbt.hasUUID())
                 return;
 

@@ -3,12 +3,14 @@ package com.nuclyon.technicallycoded.inventoryrollback.commands.inventoryrollbac
 import com.nuclyon.technicallycoded.inventoryrollback.InventoryRollbackPlus;
 import com.nuclyon.technicallycoded.inventoryrollback.commands.IRPCommand;
 import com.nuclyon.technicallycoded.inventoryrollback.util.LegacyBackupConversionUtil;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import me.danjono.inventoryrollback.config.MessageData;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ImportSubCmd extends IRPCommand {
@@ -32,15 +34,12 @@ public class ImportSubCmd extends IRPCommand {
                 suggestConfirm.set(true);
 
                 // Reset suggestion availability after 10 seconds
-                this.main.getServer().getScheduler().runTaskLaterAsynchronously(this.main, () -> {
-                    suggestConfirm.set(false);
-                }, 10 * 20);
-
+                this.main.getServer().getAsyncScheduler().runDelayed(this.main, task -> suggestConfirm.set(false), 10L, TimeUnit.SECONDS);
                 return;
             }
 
             // Execute import
-            Bukkit.getAsyncScheduler().runNow(main, LegacyBackupConversionUtil::convertOldBackupData);
+            Bukkit.getAsyncScheduler().runNow(main, task -> LegacyBackupConversionUtil.convertOldBackupData());
 
             // Reset suggestion to not visible
             this.main.getServer().getAsyncScheduler().runDelayed(this.main, r -> {
@@ -51,7 +50,6 @@ public class ImportSubCmd extends IRPCommand {
         } else {
             sender.sendMessage(MessageData.getPluginPrefix() + MessageData.getNoPermission());
         }
-        return;
     }
 
     public static boolean shouldShowConfirmOption() {

@@ -1,6 +1,7 @@
 package com.nuclyon.technicallycoded.inventoryrollback.util;
 
 import com.nuclyon.technicallycoded.inventoryrollback.InventoryRollbackPlus;
+import io.papermc.paper.threadedregions.scheduler.ScheduledTask;
 import me.danjono.inventoryrollback.config.ConfigData;
 import me.danjono.inventoryrollback.config.MessageData;
 import me.danjono.inventoryrollback.data.LogType;
@@ -232,5 +233,4 @@ public class LegacyBackupConversionUtil {
 
         return config;
     }
-
 }
