@@ -42,9 +42,7 @@ public class ImportSubCmd extends IRPCommand {
             Bukkit.getAsyncScheduler().runNow(main, task -> LegacyBackupConversionUtil.convertOldBackupData());
 
             // Reset suggestion to not visible
-            this.main.getServer().getAsyncScheduler().runDelayed(this.main, r -> {
-                suggestConfirm.set(false);
-            }, 10 * 20 * 50, java.util.concurrent.TimeUnit.MILLISECONDS);
+            this.main.getServer().getAsyncScheduler().runDelayed(this.main, r -> suggestConfirm.set(false), 10 * 20 * 50, java.util.concurrent.TimeUnit.MILLISECONDS);
 
             sender.sendMessage(MessageData.getPluginPrefix() + MessageData.getImportSuccess());
         } else {
