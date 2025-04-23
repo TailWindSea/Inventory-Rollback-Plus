@@ -3,6 +3,7 @@ package com.nuclyon.technicallycoded.inventoryrollback;
 import com.nuclyon.technicallycoded.inventoryrollback.UpdateChecker.UpdateResult;
 import com.nuclyon.technicallycoded.inventoryrollback.commands.Commands;
 import com.nuclyon.technicallycoded.inventoryrollback.util.TimeZoneUtil;
+import com.nuclyon.technicallycoded.inventoryrollback.util.test.SelfTestSerialization;
 import com.tcoded.lightlibs.bukkitversion.BukkitVersion;
 import com.tcoded.lightlibs.bukkitversion.MCVersion;
 import io.papermc.lib.PaperLib;
@@ -19,9 +20,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.HandlerList;
 
+import java.io.File;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class InventoryRollbackPlus extends InventoryRollback {
@@ -85,6 +88,8 @@ public class InventoryRollbackPlus extends InventoryRollback {
         // Events
         getServer().getPluginManager().registerEvents(new ClickGUI(), this);
         getServer().getPluginManager().registerEvents(new EventLogs(), this);
+        // Run after all plugin enable
+        getServer().getScheduler().runTask(this, EventLogs::patchLowestHandlers);
 
         // PaperLib
         if (!PaperLib.isPaper()) {
@@ -94,6 +99,9 @@ public class InventoryRollbackPlus extends InventoryRollback {
             this.getLogger().info("Learn more at: https://papermc.io/");
             this.getLogger().info("----------------------------------------");
         }
+
+        // Run self-tests
+        SelfTestSerialization.runTests();
     }
 
     @Override
@@ -106,8 +114,8 @@ public class InventoryRollbackPlus extends InventoryRollback {
         getLogger().info("Saving player inventories...");
         for (Player player : this.getServer().getOnlinePlayers()) {
             if (player.hasPermission("inventoryrollbackplus.leavesave")) {
-                new SaveInventory(player, LogType.QUIT, null, null, player.getInventory(), player.getEnderChest())
-                        .createSave(false);
+                new SaveInventory(player, LogType.QUIT, null, null)
+                        .snapshotAndSave(player.getInventory(), player.getEnderChest(), false);
             }
         }
         getLogger().info("Done saving player inventories!");
@@ -230,6 +238,61 @@ public class InventoryRollbackPlus extends InventoryRollback {
 
         metrics.addCustomChart(new SimplePie("time_zone", () -> {
             return ConfigData.getTimeZone().getID();
+        }));
+
+        metrics.addCustomChart(new SimplePie("allow_other_plugins_edit_death_inventory", () -> {
+            return String.valueOf(ConfigData.isAllowOtherPluginEditDeathInventory());
+        }));
+
+        metrics.addCustomChart(new SimplePie("custom_online_mode", () -> {
+            boolean vanillaOnline = this.getServer().getOnlineMode();
+            boolean spigotProxyMode = false;
+
+            boolean legacyPaperProxyEnabled = false;
+            boolean legacyPaperProxyMode = false;
+
+            boolean modernPaperProxyEnabled = false;
+            boolean modernPaperProxyMode = false;
+
+            File mainFolder = new File(System.getProperty("user.dir"));
+
+            File spigotConfig = new File(mainFolder, "spigot.yml");
+            if (spigotConfig.exists()) {
+                YamlConfiguration config = YamlConfiguration.loadConfiguration(spigotConfig);
+                spigotProxyMode = config.getBoolean("settings.bungeecord", false);
+            }
+
+            File legacyPaperConfig = new File(mainFolder, "paper.yml");
+            if (legacyPaperConfig.exists()) {
+                YamlConfiguration config = YamlConfiguration.loadConfiguration(legacyPaperConfig);
+                legacyPaperProxyEnabled = config.getBoolean("settings.velocity-support.enabled", false);
+                legacyPaperProxyMode = config.getBoolean("settings.velocity-support.online-mode", false);
+            }
+
+            File modernPaperConfig = new File(mainFolder, "config/paper-global.yml");
+            if (modernPaperConfig.exists()) {
+                YamlConfiguration config = YamlConfiguration.loadConfiguration(modernPaperConfig);
+                modernPaperProxyEnabled = config.getBoolean("proxies.velocity.enabled", false);
+                modernPaperProxyMode = config.getBoolean("proxies.velocity.online-mode", false);
+            }
+
+            if (modernPaperProxyEnabled) {
+                if (modernPaperProxyMode) return "Modern Paper Proxy - Online";
+                return "Modern Paper Proxy - Offline";
+            }
+
+            if (legacyPaperProxyEnabled) {
+                if (legacyPaperProxyMode) return "Legacy Paper Proxy - Online";
+                return "Legacy Paper Proxy - Offline";
+            }
+
+            if (spigotProxyMode) {
+                if (vanillaOnline) return "Bungeecord - Online";
+                return "Bungeecord - Offline";
+            }
+
+            if (vanillaOnline) return "Vanilla - Online";
+            return "Vanilla - Offline";
         }));
     }
 

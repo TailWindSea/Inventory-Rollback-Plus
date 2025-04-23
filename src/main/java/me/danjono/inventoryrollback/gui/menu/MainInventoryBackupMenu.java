@@ -21,62 +21,62 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainInventoryBackupMenu {
 
-    private final InventoryRollbackPlus main;
+	private final InventoryRollbackPlus main;
 
-    private final Player staff;
-    private final UUID playerUUID;
-    private final LogType logType;
-    private final Long timestamp;
-    private final ItemStack[] mainInventory;
-    private final ItemStack[] armour;
-    private final ItemStack[] enderChest;
-    private final String location;
-    private final double health;
-    private final int hunger;
-    private final float saturation;
-    private final float xp;
-
+	private final Player staff;
+	private final UUID playerUUID;
+	private final LogType logType;
+	private final Long timestamp;
+	private final ItemStack[] mainInventory;
+	private final ItemStack[] armour;
+	private final ItemStack[] enderChest;
+	private final String location;
+	private final double health;
+	private final int hunger;
+	private final float saturation;
+	private final float xp;
+	
     private final Buttons buttons;
     private Inventory inventory;
+	
+	public MainInventoryBackupMenu(Player staff, PlayerData data, String location) {
+		this.main = InventoryRollbackPlus.getInstance();
 
-    public MainInventoryBackupMenu(Player staff, PlayerData data, String location) {
-        this.main = InventoryRollbackPlus.getInstance();
-
-        this.staff = staff;
-        this.playerUUID = data.getOfflinePlayer().getUniqueId();
-        this.logType = data.getLogType();
-        this.timestamp = data.getTimestamp();
-        this.mainInventory = data.getMainInventory();
-        this.armour = data.getArmour();
-        this.enderChest = data.getEnderChest();
-        this.location = location;
-        this.health = data.getHealth();
-        this.hunger = data.getFoodLevel();
-        this.saturation = data.getSaturation();
-        this.xp = data.getXP();
-
-        this.buttons = new Buttons(playerUUID);
-
-        createInventory();
-    }
-
-    public void createInventory() {
-        inventory = Bukkit.createInventory(staff, InventoryName.MAIN_BACKUP.getSize(), InventoryName.MAIN_BACKUP.getName());
-
-        //Add back button
+		this.staff = staff;
+		this.playerUUID = data.getOfflinePlayer().getUniqueId();
+		this.logType = data.getLogType();
+		this.timestamp = data.getTimestamp();
+		this.mainInventory = data.getMainInventory();
+		this.armour = data.getArmour();
+	    this.enderChest = data.getEnderChest();
+		this.location = location;
+		this.health = data.getHealth();
+		this.hunger = data.getFoodLevel();
+		this.saturation = data.getSaturation();
+		this.xp = data.getXP();
+		
+		this.buttons = new Buttons(playerUUID);
+		
+		createInventory();
+	}
+	
+	public void createInventory() {
+	    inventory = Bukkit.createInventory(staff, InventoryName.MAIN_BACKUP.getSize(), InventoryName.MAIN_BACKUP.getName());
+	    
+	    //Add back button
         inventory.setItem(46, buttons.inventoryMenuBackButton(MessageData.getBackButton(), logType, timestamp));
-    }
+	}
+	
+	public Inventory getInventory() {
+	    return this.inventory;
+	}
+		
+	public void showBackupItems() {
+		// Make sure we are not running this on the main thread
+		assert !Bukkit.isPrimaryThread();
 
-    public Inventory getInventory() {
-        return this.inventory;
-    }
-
-    public void showBackupItems() {
-        // Make sure we are not running this on the main thread
-        assert !Bukkit.isPrimaryThread();
-
-        int item = 0;
-        int position = 0;
+		int item = 0;
+		int position = 0;
 
         //If the backup file is invalid it will return null, we want to catch it here
         try {
@@ -156,20 +156,20 @@ public class MainInventoryBackupMenu {
         else
             inventory.setItem(48, buttons.restoreAllInventoryDisabled(logType, timestamp));
 
-        //Add teleport back button
-        inventory.setItem(49, buttons.enderPearlButton(logType, location));
-
-        //Add Enderchest icon
-        inventory.setItem(50, buttons.enderChestButton(logType, timestamp, enderChest));
-
-        //Add health icon
-        inventory.setItem(51, buttons.healthButton(logType, health));
-
-        //Add hunger icon
-        inventory.setItem(52, buttons.hungerButton(logType, hunger, saturation));
-
-        //Add Experience Bottle
-        inventory.setItem(53, buttons.experiencePotion(logType, xp));
-    }
-
+		//Add teleport back button
+		inventory.setItem(49, buttons.enderPearlButton(logType, location));
+		
+		//Add Enderchest icon	
+		inventory.setItem(50, buttons.enderChestButton(logType, timestamp, enderChest));
+		
+		//Add health icon
+		inventory.setItem(51, buttons.healthButton(logType, health));
+		
+		//Add hunger icon
+		inventory.setItem(52, buttons.hungerButton(logType, hunger, saturation));
+		
+		//Add Experience Bottle			
+		inventory.setItem(53, buttons.experiencePotion(logType, xp));
+	}
+		
 }

@@ -1,6 +1,7 @@
 package me.danjono.inventoryrollback.listeners;
 
 import com.nuclyon.technicallycoded.inventoryrollback.InventoryRollbackPlus;
+import com.nuclyon.technicallycoded.inventoryrollback.customdata.CustomDataItemEditor;
 import com.tcoded.lightlibs.bukkitversion.BukkitVersion;
 import io.papermc.lib.PaperLib;
 import me.danjono.inventoryrollback.InventoryRollback;
@@ -13,7 +14,6 @@ import me.danjono.inventoryrollback.gui.Buttons;
 import me.danjono.inventoryrollback.gui.InventoryName;
 import me.danjono.inventoryrollback.gui.menu.*;
 import me.danjono.inventoryrollback.inventory.RestoreInventory;
-import me.danjono.inventoryrollback.reflections.NBTWrapper;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -61,7 +61,7 @@ public class ClickGUI implements Listener {
             return;
         }
 
-        for (Integer slot : e.getRawSlots()) {
+        for (Integer slot : e.getRawSlots()) {            
             if (slot < e.getInventory().getSize()) {
                 return;
             }
@@ -75,8 +75,8 @@ public class ClickGUI implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent e) {
         String title = e.getView().getTitle();
-        if (!title.equals(InventoryName.MAIN_MENU.getName())
-                && !title.equals(InventoryName.PLAYER_MENU.getName())
+        if (!title.equals(InventoryName.MAIN_MENU.getName()) 
+                && !title.equals(InventoryName.PLAYER_MENU.getName()) 
                 && !title.equalsIgnoreCase(InventoryName.ROLLBACK_LIST.getName())
                 && !title.equalsIgnoreCase(InventoryName.MAIN_BACKUP.getName())
                 && !title.equalsIgnoreCase(InventoryName.ENDER_CHEST_BACKUP.getName()))
@@ -123,8 +123,8 @@ public class ClickGUI implements Listener {
     }
 
     private void mainMenu(InventoryClickEvent e, Player staff, ItemStack icon) {
-        if ((e.getRawSlot() >= 0 && e.getRawSlot() < InventoryName.MAIN_MENU.getSize())) {
-            NBTWrapper nbt = new NBTWrapper(icon);
+        if ((e.getRawSlot() >= 0 && e.getRawSlot() < InventoryName.MAIN_MENU.getSize())) {                
+            CustomDataItemEditor nbt = CustomDataItemEditor.editItem(icon);
             if (!nbt.hasUUID())
                 return;
 
@@ -158,8 +158,8 @@ public class ClickGUI implements Listener {
         if (icon == null)
             return;
 
-        if ((e.getRawSlot() >= 0 && e.getRawSlot() < InventoryName.PLAYER_MENU.getSize())) {
-            NBTWrapper nbt = new NBTWrapper(icon);
+        if ((e.getRawSlot() >= 0 && e.getRawSlot() < InventoryName.PLAYER_MENU.getSize())) {				
+            CustomDataItemEditor nbt = CustomDataItemEditor.editItem(icon);
             if (!nbt.hasUUID())
                 return;
 
@@ -188,7 +188,9 @@ public class ClickGUI implements Listener {
 
     private void rollbackMenu(InventoryClickEvent e, Player staff, ItemStack icon) {
         if (e.getRawSlot() >= 0 && e.getRawSlot() < InventoryName.ROLLBACK_LIST.getSize()) {
-            NBTWrapper nbt = new NBTWrapper(icon);
+            if (icon == null) return;
+
+            CustomDataItemEditor nbt = CustomDataItemEditor.editItem(icon);
             if (!nbt.hasUUID())
                 return;
 
@@ -263,11 +265,11 @@ public class ClickGUI implements Listener {
             return;
 
         if (e.getRawSlot() >= (InventoryName.MAIN_BACKUP.getSize() - 9) && e.getRawSlot() < InventoryName.MAIN_BACKUP.getSize()) {
-            NBTWrapper nbt = new NBTWrapper(icon);
+            CustomDataItemEditor nbt = CustomDataItemEditor.editItem(icon);
             if (!nbt.hasUUID())
                 return;
 
-            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(nbt.getString("uuid")));
+            OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(UUID.fromString(nbt.getString("uuid")));            
             LogType logType = LogType.valueOf(nbt.getString("logType"));
             Long timestamp = nbt.getLong("timestamp");
 
@@ -385,7 +387,7 @@ public class ClickGUI implements Listener {
                     return;
                 }
 
-                String[] location = nbt.getString("location").split(",");
+                String[] location = nbt.getString("location").split(",");			
                 World world = Bukkit.getWorld(location[0]);
 
                 if (world == null) {
@@ -394,14 +396,14 @@ public class ClickGUI implements Listener {
                     return;
                 }
 
-                Location loc = new Location(world,
-                        Math.floor(Double.parseDouble(location[1])),
-                        Math.floor(Double.parseDouble(location[2])),
+                Location loc = new Location(world, 
+                        Math.floor(Double.parseDouble(location[1])), 
+                        Math.floor(Double.parseDouble(location[2])), 
                         Math.floor(Double.parseDouble(location[3])))
-                        .add(0.5, 0.5, 0.5);
+                        .add(0.5, 0.5, 0.5);				
 
                 // Teleport player on a slight delay to block the teleport icon glitching out into the player inventory
-                Bukkit.getGlobalRegionScheduler().runDelayed(InventoryRollback.getInstance(), t -> {
+                Bukkit.getScheduler().runTaskLater(InventoryRollback.getInstance(), () -> {
                     e.getWhoClicked().closeInventory();
                     PaperLib.teleportAsync(staff,loc).thenAccept((result) -> {
                         if (SoundData.isTeleportEnabled())
@@ -410,41 +412,45 @@ public class ClickGUI implements Listener {
                         staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getDeathLocationTeleport(loc));
                     });
                 }, 1L);
-            }
+            } 
 
             // Clicked icon to restore backup players ender chest
             else if (icon.getType().equals(Buttons.getEnderChestIcon())) {
-                main.getServer().getAsyncScheduler().runNow(main, task -> {
-                    // Init from MySQL or, if YAML, init & load config file
-                    PlayerData data = new PlayerData(offlinePlayer, logType, timestamp);
 
-                    // Get data if using MySQL
-                    if (ConfigData.getSaveType() == ConfigData.SaveType.MYSQL) {
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        // Init from MySQL or, if YAML, init & load config file
+                        PlayerData data = new PlayerData(offlinePlayer, logType, timestamp);
+
+                        // Get data if using MySQL
+                        if (ConfigData.getSaveType() == ConfigData.SaveType.MYSQL) {
+                            try {
+                                data.getAllBackupData().get();
+                            } catch (ExecutionException | InterruptedException ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+
+                        // Create Inventory
+                        EnderChestBackupMenu menu = new EnderChestBackupMenu(staff, data, 1);
+
+                        // Open inventory sync (compressed code)
+                        Future<Void> futureOpenInv = main.getServer().getScheduler().callSyncMethod(main,
+                                () -> {
+                                    staff.openInventory(menu.getInventory());
+                                    return null;
+                                });
                         try {
-                            data.getAllBackupData().get();
+                            futureOpenInv.get();
                         } catch (ExecutionException | InterruptedException ex) {
                             ex.printStackTrace();
                         }
+
+                        // Place items async
+                        menu.showEnderChestItems();
                     }
-
-                    // Create Inventory
-                    EnderChestBackupMenu menu = new EnderChestBackupMenu(staff, data, 1);
-
-                    // Open inventory sync (compressed code)
-                    FutureTask<Void> futureOpenInv = new FutureTask<>(() -> {
-                        staff.openInventory(menu.getInventory());
-                        return null;
-                    });
-                    main.getServer().getGlobalRegionScheduler().run(main, t -> futureOpenInv.run());
-                    try {
-                        futureOpenInv.get();
-                    } catch (ExecutionException | InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-
-                    // Place items async
-                    menu.showEnderChestItems();
-                });
+                }.runTaskAsynchronously(this.main);
             }
 
             // Clicked icon to restore backup players health
@@ -456,7 +462,7 @@ public class ClickGUI implements Listener {
                 }
 
                 if (offlinePlayer.isOnline()) {
-                    Player player = (Player) offlinePlayer;
+                    Player player = (Player) offlinePlayer;	
                     double health = nbt.getDouble("health");
 
                     player.setHealth(health);
@@ -470,7 +476,7 @@ public class ClickGUI implements Listener {
                 } else {
                     staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getHealthNotOnline(offlinePlayer.getName()));
                 }
-            }
+            } 
 
             //Clicked icon to restore backup players hunger
             else if (icon.getType().equals(Buttons.getHungerIcon())) {
@@ -481,7 +487,7 @@ public class ClickGUI implements Listener {
                 }
 
                 if (offlinePlayer.isOnline()) {
-                    Player player = (Player) offlinePlayer;
+                    Player player = (Player) offlinePlayer;	
                     int hunger = nbt.getInt("hunger");
                     Float saturation = nbt.getFloat("saturation");
 
@@ -497,7 +503,7 @@ public class ClickGUI implements Listener {
                 } else {
                     staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getHungerNotOnline(offlinePlayer.getName()));
                 }
-            }
+            } 
 
             //Clicked icon to restore backup players experience
             else if (icon.getType().equals(Buttons.getExperienceIcon())) {
@@ -507,8 +513,8 @@ public class ClickGUI implements Listener {
                     return;
                 }
 
-                if (offlinePlayer.isOnline()) {
-                    Player player = (Player) offlinePlayer;
+                if (offlinePlayer.isOnline()) {				
+                    Player player = (Player) offlinePlayer;	
                     Float xp = nbt.getFloat("xp");
 
                     RestoreInventory.setTotalExperience(player, xp);
@@ -520,7 +526,7 @@ public class ClickGUI implements Listener {
                     player.sendMessage(MessageData.getPluginPrefix() + MessageData.getExperienceRestoredPlayer(staff.getName(), level));
                     if (!staff.getUniqueId().equals(player.getUniqueId()))
                         staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getExperienceRestored(player.getName(), level));
-                } else {
+                } else {				    
                     staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getExperienceNotOnlinePlayer(offlinePlayer.getName()));
                 }
             }
@@ -663,12 +669,14 @@ public class ClickGUI implements Listener {
                             }
                         }
 
-                        // Display inventory to player
-                        FutureTask <Void> inventoryReplaceFuture = new FutureTask<>(() -> {
-                            player.getEnderChest().setContents(data.getEnderChest());
-                            return null;
-                        });
-                        main.getServer().getGlobalRegionScheduler().run(main, t -> inventoryReplaceFuture.run());
+                            // Display inventory to player
+                            Future<Void> inventoryReplaceFuture = main.getServer().getScheduler().callSyncMethod(main,
+                                    () -> {
+                                        ItemStack[] enderChest = data.getEnderChest();
+                                        if (enderChest == null) enderChest = new ItemStack[0];
+                                        player.getEnderChest().setContents(enderChest);
+                                        return null;
+                                    });
 
                         //If the backup file is invalid it will return null, we want to catch it here
                         try {
