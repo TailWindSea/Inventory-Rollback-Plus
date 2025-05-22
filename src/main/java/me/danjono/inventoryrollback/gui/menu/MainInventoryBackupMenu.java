@@ -14,99 +14,99 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MainInventoryBackupMenu {
 
-	private final InventoryRollbackPlus main;
+    private final InventoryRollbackPlus main;
 
-	private final Player staff;
-	private final UUID playerUUID;
-	private final LogType logType;
-	private final Long timestamp;
-	private final ItemStack[] mainInventory;
-	private final ItemStack[] armour;
-	private final ItemStack[] enderChest;
-	private final String location;
-	private final double health;
-	private final int hunger;
-	private final float saturation;
-	private final float xp;
-	
+    private final Player staff;
+    private final UUID playerUUID;
+    private final LogType logType;
+    private final Long timestamp;
+    private final ItemStack[] mainInventory;
+    private final ItemStack[] armour;
+    private final ItemStack[] enderChest;
+    private final String location;
+    private final double health;
+    private final int hunger;
+    private final float saturation;
+    private final float xp;
+
     private final Buttons buttons;
     private Inventory inventory;
 
-	private int mainInvLen;
+    private int mainInvLen;
 
-	public MainInventoryBackupMenu(Player staff, PlayerData data, String location) {
-		this.main = InventoryRollbackPlus.getInstance();
+    public MainInventoryBackupMenu(Player staff, PlayerData data, String location) {
+        this.main = InventoryRollbackPlus.getInstance();
 
-		this.staff = staff;
-		this.playerUUID = data.getOfflinePlayer().getUniqueId();
-		this.logType = data.getLogType();
-		this.timestamp = data.getTimestamp();
-		this.mainInventory = data.getMainInventory();
-		this.armour = data.getArmour();
-	    this.enderChest = data.getEnderChest();
-		this.location = location;
-		this.health = data.getHealth();
-		this.hunger = data.getFoodLevel();
-		this.saturation = data.getSaturation();
-		this.xp = data.getXP();
-		
-		this.buttons = new Buttons(playerUUID);
+        this.staff = staff;
+        this.playerUUID = data.getOfflinePlayer().getUniqueId();
+        this.logType = data.getLogType();
+        this.timestamp = data.getTimestamp();
+        this.mainInventory = data.getMainInventory();
+        this.armour = data.getArmour();
+        this.enderChest = data.getEnderChest();
+        this.location = location;
+        this.health = data.getHealth();
+        this.hunger = data.getFoodLevel();
+        this.saturation = data.getSaturation();
+        this.xp = data.getXP();
 
-		this.mainInvLen = mainInventory == null ? 0 : mainInventory.length;
+        this.buttons = new Buttons(playerUUID);
 
-		createInventory();
-	}
-	
-	public void createInventory() {
-	    inventory = Bukkit.createInventory(staff, InventoryName.MAIN_BACKUP.getSize(), InventoryName.MAIN_BACKUP.getName());
-	    
-	    //Add back button
+        this.mainInvLen = mainInventory == null ? 0 : mainInventory.length;
+
+        createInventory();
+    }
+
+    public void createInventory() {
+        inventory = Bukkit.createInventory(staff, InventoryName.MAIN_BACKUP.getSize(), InventoryName.MAIN_BACKUP.getName());
+
+        //Add back button
         inventory.setItem(46, buttons.inventoryMenuBackButton(MessageData.getBackButton(), logType, timestamp));
-	}
-	
-	public Inventory getInventory() {
-	    return this.inventory;
-	}
-		
-	public void showBackupItems() {
-		// Make sure we are not running this on the main thread
-		assert !Bukkit.isPrimaryThread();
+    }
 
-		int item;
-		int position;
+    public Inventory getInventory() {
+        return this.inventory;
+    }
+
+    public void showBackupItems() {
+        // Make sure we are not running this on the main thread
+        assert !Bukkit.isPrimaryThread();
+
+        int item;
+        int position;
 
         //If the backup file is invalid it will return null, we want to catch it here
         try {
             // Add items, 5 per tick
-            AtomicInteger invPosition = new AtomicInteger(0);
-            AtomicInteger itemPos = new AtomicInteger(0);
-            final int max = mainInventory.length - 5; // excluded
             main.getServer().getAsyncScheduler().runAtFixedRate(main, task -> {
-                for (int i = 0; i < 6; i++) {
-                    // If hit max item position, stop
-                    if (itemPos.get() >= max) {
-                        task.cancel();
-                        return;
-                    }
 
-                    ItemStack itemStack = mainInventory[itemPos.get()];
-                    if (itemStack != null) {
-                        inventory.setItem(invPosition.get(), itemStack);
-                        // Don't change inv position if there was nothing to place
-                        invPosition.set(invPosition.get() + 1);
+                int invPosition = 0;
+                int itemPos = 0;
+                final int max = mainInvLen - 5; // excluded
+                    for (int i = 0; i < 6; i++) {
+                        // If hit max item position, stop
+                        if (itemPos >= max) {
+                            task.cancel();
+                            return;
+                        }
+
+                        ItemStack itemStack = mainInventory[itemPos];
+                        if (itemStack != null) {
+                            inventory.setItem(invPosition, itemStack);
+                            // Don't change inv position if there was nothing to place
+                            invPosition++;
+                        }
+                        // Move to next item stack
+                        itemPos++;
                     }
-                    // Move to next item stack
-                    itemPos.set(itemPos.get() + 1);
-                }
             }, 0, 50, TimeUnit.MILLISECONDS);
-        } catch (NullPointerException e) {
+        } catch (Exception ex) {
+            ex.printStackTrace();
             staff.sendMessage(MessageData.getPluginPrefix() + MessageData.getErrorInventory());
             return;
         }
@@ -119,8 +119,8 @@ public class MainInventoryBackupMenu {
             try {
                 for (int i = 0; i < armour.length; i++) {
                     // Place item safely
-					position = getPosition(position, i, armour);
-				}
+                    position = getPosition(position, i, armour);
+                }
             } catch (ExecutionException | InterruptedException ex) {
                 ex.printStackTrace();
             }
@@ -129,8 +129,8 @@ public class MainInventoryBackupMenu {
                 for (int i = 36; i < mainInventory.length; i++) {
                     if (mainInventory[item] != null) {
                         // Place item safely
-						position = getPosition(position, item, mainInventory);
-					}
+                        position = getPosition(position, item, mainInventory);
+                    }
                     item++;
                 }
             } catch (ExecutionException | InterruptedException ex) {
@@ -143,82 +143,66 @@ public class MainInventoryBackupMenu {
             inventory.setItem(48, buttons.restoreAllInventory(logType, timestamp));
         else
             inventory.setItem(48, buttons.restoreAllInventoryDisabled(logType, timestamp));
-		item = 36;
-		position = 44;
+        item = 36;
+        position = 44;
 
-		//Add armour
-		if (armour.length > 0) {
-			try {
-				for (int i = 0; i < armour.length; i++) {
-					// Place item safely
-					final int finalPos = position;
-					final int finalItem = i;
-					Future<Void> placeItemFuture = main.getServer().getScheduler().callSyncMethod(main,
-							() -> {
-								inventory.setItem(finalPos, armour[finalItem]);
-								return null;
-							});
-					placeItemFuture.get();
-					position--;
-				}
-			} catch (ExecutionException | InterruptedException ex) {
-				ex.printStackTrace();
-			}
-		} else {
-			try {
-				for (int i = 36; i < mainInvLen; i++) {
-					if (mainInventory[item] != null) {
-						// Place item safely
-						final int finalPos = position;
-						final int finalItem = item;
-						Future<Void> placeItemFuture = main.getServer().getScheduler().callSyncMethod(main,
-								() -> {
-									inventory.setItem(finalPos, mainInventory[finalItem]);
-									return null;
-								});
-						placeItemFuture.get();
-						position--;
-					}
-					item++;
-				}
-			} catch (ExecutionException | InterruptedException ex) {
-				ex.printStackTrace();
-			}
-		}
+        //Add armour
+        if (armour.length > 0) {
+            try {
+                for (int i = 0; i < armour.length; i++) {
+                    // Place item safely
+                    position = getPosition(i, position, armour);
+                }
+            } catch (ExecutionException | InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        } else {
+            try {
+                for (int i = 36; i < mainInvLen; i++) {
+                    if (mainInventory[item] != null) {
+                        // Place item safely
+                        position = getPosition(item, position, mainInventory);
+                    }
+                    item++;
+                }
+            } catch (ExecutionException | InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        }
 
-		// Add restore all player inventory button
-		if (ConfigData.isRestoreToPlayerButton())
-		    inventory.setItem(48, buttons.restoreAllInventory(logType, timestamp));
-		 else
-			inventory.setItem(48, buttons.restoreAllInventoryDisabled(logType, timestamp));
+        // Add restore all player inventory button
+        if (ConfigData.isRestoreToPlayerButton())
+            inventory.setItem(48, buttons.restoreAllInventory(logType, timestamp));
+        else
+            inventory.setItem(48, buttons.restoreAllInventoryDisabled(logType, timestamp));
 
-		//Add teleport back button
-		inventory.setItem(49, buttons.enderPearlButton(logType, location));
-		
-		//Add Enderchest icon	
-		inventory.setItem(50, buttons.enderChestButton(logType, timestamp, enderChest));
-		
-		//Add health icon
-		inventory.setItem(51, buttons.healthButton(logType, health));
-		
-		//Add hunger icon
-		inventory.setItem(52, buttons.hungerButton(logType, hunger, saturation));
-		
-		//Add Experience Bottle			
-		inventory.setItem(53, buttons.experiencePotion(logType, xp));
-	}
+        //Add teleport back button
+        inventory.setItem(49, buttons.enderPearlButton(logType, location));
 
-	private int getPosition(int position, int i, ItemStack[] armour) throws InterruptedException, ExecutionException {
-		final int finalPos = position;
-		final int finalItem = i;
-		FutureTask<Void> placeItemFuture = new FutureTask<>(() -> {
-			inventory.setItem(finalPos, armour[finalItem]);
-			return null;
-		});
-		main.getServer().getGlobalRegionScheduler().run(main, t -> placeItemFuture.run());
-		placeItemFuture.get();
-		position--;
-		return position;
-	}
+        //Add Enderchest icon
+        inventory.setItem(50, buttons.enderChestButton(logType, timestamp, enderChest));
+
+        //Add health icon
+        inventory.setItem(51, buttons.healthButton(logType, health));
+
+        //Add hunger icon
+        inventory.setItem(52, buttons.hungerButton(logType, hunger, saturation));
+
+        //Add Experience Bottle
+        inventory.setItem(53, buttons.experiencePotion(logType, xp));
+    }
+
+    private int getPosition(int position, int i, ItemStack[] armour) throws InterruptedException, ExecutionException {
+        final int finalPos = position;
+        final int finalItem = i;
+        FutureTask<Void> placeItemFuture = new FutureTask<>(() -> {
+            inventory.setItem(finalPos, armour[finalItem]);
+            return null;
+        });
+        main.getServer().getGlobalRegionScheduler().run(main, t -> placeItemFuture.run());
+        placeItemFuture.get();
+        position--;
+        return position;
+    }
 
 }
